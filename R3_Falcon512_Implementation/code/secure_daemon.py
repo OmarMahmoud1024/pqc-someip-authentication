@@ -1,8 +1,8 @@
 """
 secure_daemon.py
 
-Track A, Objective 4 (someipyd integration) + Objective 5 (verification/trust
-store/Last-Valid-In-Wins gate) of the R3 design document.
+Implements the someipyd integration and the verification / trust store /
+Last-Valid-In-Wins gate described in the R3 design document.
 
 WHY THIS FILE EXISTS INSTEAD OF PATCHING someipy DIRECTLY:
 Investigating the installed someipy 2.1.2 package showed that the actual periodic

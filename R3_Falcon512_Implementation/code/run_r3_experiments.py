@@ -1,7 +1,7 @@
 """
 run_r3_experiments.py
 
-Track A, Objective 7 of the R3 design document: re-runs the R2 experiments against the
+Re-runs the R2 experiments against the
 now-authenticated gateway (secure_daemon.py instead of bare someipyd), plus the new
 endpoint-substitution attack test. Mirrors R2's auto_lab.py structure so results stay
 directly comparable.

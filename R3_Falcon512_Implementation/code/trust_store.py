@@ -1,7 +1,7 @@
 """
 trust_store.py
 
-Track A, Objective 5 of the R3 design document: the trust store (Service ID -> public key,
+The trust store (Service ID -> public key,
 design doc §10) plus the "Last-Valid-In-Wins" state (design doc §7): the highest Counter
 seen so far in a *validly signed* message per (service_id, instance_id), and the endpoint
 that counter was bound to.

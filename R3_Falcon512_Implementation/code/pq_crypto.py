@@ -1,7 +1,7 @@
 """
 pq_crypto.py
 
-Track A, Objectives 1-2 of the R3 design document:
+Implements the following from the R3 design document:
   - The PQ-Signature Option TLV format (Length + Type 0x50 + Reserved + AlgID + Signature),
     kept faithful to the design document even though the current testbed transports it as a
     companion datagram rather than literally inside someipy's native SD Options Array

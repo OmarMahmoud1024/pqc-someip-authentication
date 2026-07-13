@@ -1,4 +1,4 @@
-=== R3 TRACK A -- VALIDATED RESULTS ===
+=== R3 VALIDATED RESULTS ===
 (Produced by actually running the code below end-to-end: real Falcon-512 keys, real
 someipy daemon with the PQ-Auth gate patched in, real camera/attacker/dashboard
 processes, real multicast traffic. Not a simulation of expected behavior -- this is

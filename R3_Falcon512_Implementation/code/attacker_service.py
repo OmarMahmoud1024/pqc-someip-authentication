@@ -1,8 +1,9 @@
 """
 attacker_service.py -- R3 version (extends the R2 script)
 
-Track A, Objective 6 of the R3 design document (§6, §8): adds a second attack mode,
-"substitution", alongside the original R2 "flood" mode.
+Adds a second attack mode, "substitution", alongside the original R2 "flood" mode,
+implementing the endpoint-substitution replay attack described in the R3 design document
+(§6, §8).
 
   mode="flood"        (unchanged from R2): a naive rogue ServerServiceInstance offers
                        the same Service ID on its own port with a fast cyclic offer
