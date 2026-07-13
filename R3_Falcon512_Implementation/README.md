@@ -19,7 +19,6 @@ The third phase of this research: the phase in which the Falcon-512 decision mad
 - **`figures/`** — the diagrams and charts used in the report, generated directly from real experimental data (not hand-drawn).
 - **`data/`** — curated results: measured packet sizes, ten baseline latency measurements, and before/after attack success rates.
 - **`validation_scripts/`** — internal test drivers used to validate the system while it was being built. Not part of the core deliverable, but kept here for transparency.
-- **`report_generation/`** — the scripts used to generate the figures (`make_figures.py`) and the report documents themselves (`build_r3_report.js`, `build_doc.js`), using `matplotlib` and the `docx` npm package.
 
 ## Headline results so far
 

@@ -45,7 +45,6 @@ R3_Falcon512_Implementation/
   figures/                       Diagrams and charts used in the R3 report (generated from real data)
   data/                          Curated experimental results from R3
   validation_scripts/            Internal test drivers used to validate the system end to end (not part of the core deliverable)
-  report_generation/             Scripts used to generate the report figures and the report document itself
 ```
 
 ## How the R3 system works, briefly
@@ -63,8 +62,6 @@ The code depends on:
 - `pqcrypto` — Python bindings for the Falcon-512 and ML-DSA-44 reference implementations.
 
 Typical flow: run `setup_keys.py` once to generate a keypair and trust store, then run `secure_daemon.py`, `camera_service.py`, and `dashboard_client.py`/`attacker_service.py` as separate processes (see `R3_Falcon512_Implementation/code/run_r3_experiments.py` for the full experiment orchestration used to produce the results in the R3 report).
-
-Report documents were generated programmatically (see `report_generation/`) using the `docx` npm package and `matplotlib`, and verified by converting to PDF and visually inspecting every page before being finalized.
 
 ## Author
 
