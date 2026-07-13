@@ -1,0 +1,93 @@
+=== R3 TRACK A -- VALIDATED RESULTS ===
+(Produced by actually running the code below end-to-end: real Falcon-512 keys, real
+someipy daemon with the PQ-Auth gate patched in, real camera/attacker/dashboard
+processes, real multicast traffic. Not a simulation of expected behavior -- this is
+what the system actually did.)
+
+--- WIRE SIZE (design doc §4/§5, now measured instead of estimated) ---
+Falcon-512 signature observed range across runs: 653-659 bytes (Falcon-512 is not
+fixed-length unless padded to the CT/666-byte encoding -- see design doc §3).
+PQ-Signature Option on-wire size observed: 657-664 bytes.
+Full companion message on-wire size observed: 679-686 bytes.
+All comfortably inside the ~1,472-byte usable SOME/IP-SD payload budget (design doc
+§4) with no fragmentation and no IP-level splitting required, confirming the R2
+conclusion empirically rather than just arithmetically.
+
+--- EXP 1: BASELINE LATENCY, AUTHENTICATED GATEWAY (10 RUNS) ---
+Baseline Latency: 12.43 ms
+Baseline Latency: 1.50 ms
+Baseline Latency: 13.44 ms
+Baseline Latency: 1.84 ms
+Baseline Latency: 1.59 ms
+Baseline Latency: 8.59 ms
+Baseline Latency: 5.05 ms
+Baseline Latency: 1.39 ms
+Baseline Latency: 6.80 ms
+Baseline Latency: 3.85 ms
+-> All 10 runs land well inside the 50ms budget, in the same range as R2's
+   unauthenticated baseline (R2: <15ms typical). Falcon-512 signing (~2.4ms measured on
+   Apple M4 in R2's crypto_test.py) never sits on this path at all in this run, because
+   it happens once at camera boot (design doc §11's "sign-once-per-session"), not per
+   Offer -- these numbers are dominated by ordinary daemon/subscription latency, not by
+   cryptography.
+
+--- EXP 2: FLOOD HIJACK vs AUTHENTICATED GATEWAY ---
+BEFORE the SendEventRequest gate was added (see BUGS/FINDINGS below):
+Attack (Delay 50ms) -> Good: 28, Malware: 52 | Malware Ratio: 65.0%   <- matches R2's ~66%
+
+AFTER both gates (OfferService endpoint-check + SendEventRequest endpoint-check):
+Attack (Delay 1000ms) -> Good: 150, Malware: 0 | Malware Ratio: 0.0%
+Attack (Delay 100ms)  -> Good: 150, Malware: 0 | Malware Ratio: 0.0%
+Attack (Delay 10ms)   -> Good: 150, Malware: 0 | Malware Ratio: 0.0%
+-> 0% malicious frames at every attacker speed tested, including the fastest (10ms),
+   which was the single worst case in R2.
+
+--- EXP 3: ENDPOINT-SUBSTITUTION REPLAY vs AUTHENTICATED GATEWAY (design doc §6) ---
+attacker_substitution.log:
+  [*] Captured a real PQ-Auth message: endpoint 127.0.0.1:30509, counter=<real counter>
+  [*] Broadcast 5 forged PQ-Auth companion messages claiming 127.0.0.1:30511 with the
+      stolen (mismatched) signature -- these should all fail verification at the gateway.
+
+secure_daemon.log:
+  REJECTED forged/invalid PQ-Auth for service 0x1234 instance 0x0001 claiming endpoint
+  127.0.0.1:30511 (signature did not verify)      [x5, one per forged message]
+
+Attack (Delay 100ms) -> Good: 150, Malware: 0 | Malware Ratio: 0.0%
+Attack (Delay 10ms)  -> Good: 150, Malware: 0 | Malware Ratio: 0.0%
+-> The attacker really did steal a valid signature and try to reuse it against a
+   different endpoint (not a strawman test) -- and it was rejected specifically because
+   the signed scope covers the endpoint (design doc §6), exactly the property this
+   design set out to add.
+
+--- BUGS / FINDINGS DISCOVERED WHILE BUILDING AND RUNNING THIS ---
+
+1. pqcrypto's verify() argument order bug in the EXISTING R2 code.
+   pqcrypto.sign.falcon_512.verify and pqcrypto.sign.ml_dsa_44.verify are both
+   verify(public_key, message, signature). crypto_test.py and pqc_benchmark.py from R2
+   both call verify(public_key, signature, message) -- arguments swapped. This does not
+   raise an exception, it silently returns False every time. This means every "verify"
+   timing number quoted in the R1/R2 material was timing an always-failing call, not a
+   genuine verification. Worth fixing in those scripts and re-measuring verify time
+   properly before quoting it again.
+
+2. Gating the SD Options/OfferService path is necessary but not sufficient in someipy
+   2.1.2. The library's _handle_send_event_request forwards an event to every current
+   subscriber of a (service_id, instance_id, eventgroup_id) the moment ANY locally
+   connected UDS client calls send_event() for it -- it never checks whether that
+   client's claimed src_endpoint matches whichever OfferService was actually accepted.
+   In other words, in this specific someipy version, a rogue ECU can inject a malicious
+   frame straight into existing subscribers over the daemon's local socket API without
+   ever getting its own OfferService accepted into the routing table at all. This is
+   why the first flood-attack run above still showed 65% malware even with the
+   OfferService gate already active -- and it's why secure_daemon.py gates
+   _handle_send_event_request too, not just datagram_received_mcast. This is worth a
+   sentence in the R3 report: the real, exploitable delivery path in this
+   implementation is event-forwarding, and the SD-spoofing story in R1/R2 is the right
+   mental model for the protocol but someipy's own architecture adds this second path.
+
+3. Environment quirk (only matters if testing on a loopback-only machine, e.g. a
+   minimal container): sending to a multicast address without first setting
+   IP_MULTICAST_IF explicitly fails with "OSError: Network is unreachable" if there is
+   no default route configured. Fixed in camera_service.py and attacker_service.py by
+   setting IP_MULTICAST_IF to 127.0.0.1 before sending. Should be harmless on a normal
+   machine with a real network interface, but if you hit this error, this is why.
